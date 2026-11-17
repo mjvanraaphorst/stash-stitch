@@ -19,6 +19,6 @@ with ZipFile('.local/stash-stitch.zip','w',compression=ZIP_DEFLATED) as archive:
     archive.writestr(info,Path('LICENSE').read_bytes())
 `]);
 const hash = createHash('sha256').update(readFileSync('.local/stash-stitch.zip')).digest('hex');
-const { version } = JSON.parse(readFileSync('package.json'));
-writeFileSync('index.yml', `- id: stash-stitch\n  name: Stash Stitch\n  metadata:\n    description: Play scene groups as one chaptered video with a combined timeline and browser-side prebuffering.\n  version: ${version}\n  date: 2026-11-17 00:00:00\n  path: https://github.com/mjvanraaphorst/stash-stitch/releases/download/v${version}/stash-stitch.zip\n  sha256: ${hash}\n`);
+const { version, releaseDate } = JSON.parse(readFileSync('package.json'));
+writeFileSync('index.yml', `- id: stash-stitch\n  name: Stash Stitch\n  metadata:\n    description: Play scene groups as one chaptered video with a combined timeline and browser-side prebuffering.\n  version: ${version}\n  date: ${releaseDate}\n  path: https://github.com/mjvanraaphorst/stash-stitch/releases/download/v${version}/stash-stitch.zip\n  sha256: ${hash}\n`);
 console.log(`Packaged .local/stash-stitch.zip (${hash})`);
