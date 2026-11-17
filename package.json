@@ -1,0 +1,27 @@
+{
+  "name": "stash-stitch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Play Stash scene groups as one chaptered video.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "playwright test",
+    "check": "npm test && npm run build",
+    "package": "npm run build && node scripts/package.mjs",
+    "fixtures": "node scripts/fixtures.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "mp4box": "2.5.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "esbuild": "0.27.0",
+    "ffmpeg-static": "5.3.0",
+    "ffprobe-static": "3.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}
