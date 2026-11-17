@@ -2,7 +2,7 @@
   name: Stash Stitch
   metadata:
     description: Play scene groups as one chaptered video with a combined timeline and browser-side prebuffering.
-  version: 0.1.0
+  version: 0.2.0
   date: 2026-11-17 00:00:00
-  path: https://github.com/mjvanraaphorst/stash-stitch/releases/download/v0.1.0/stash-stitch.zip
-  sha256: d2b33c43305f3c724b24471c87b803aaf7df105bdd2fbf535dd339b037b18801
+  path: https://github.com/mjvanraaphorst/stash-stitch/releases/download/v0.2.0/stash-stitch.zip
+  sha256: 02e4f43679e8c93c5af8466df44fc67ee2437f5b182f9036c2a396cdcd18f5dc

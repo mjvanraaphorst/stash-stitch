@@ -137,6 +137,12 @@ export class ContinuousPlayer {
         const openings = this.assets.filter((asset, chapterIndex) => asset.segments.filter(s => s.start < 5).every(s => this.loaded.has(`${chapterIndex}:${s.index}`))).length;
         this.notify({ buffered: this.buffered(), status: `Continuous playback · ${openings}/${this.assets.length} chapter openings prepared` });
       }
+      // A later seek or speculative append reopens an ended MediaSource. The
+      // final fragment may already be loaded, so it won't be appended again to
+      // re-signal EOS. Finalize after every batch while that fragment is present.
+      const finalIndex = this.assets.length - 1;
+      const finalSegment = this.assets[finalIndex].segments.at(-1);
+      if (this.source.readyState === 'open' && this.loaded.has(`${finalIndex}:${finalSegment.index}`)) this.source.endOfStream();
       if (initial && !this.loaded.size) throw new Error('No playable chapter data was found.');
     } catch (error) {
       if (initial) throw error;

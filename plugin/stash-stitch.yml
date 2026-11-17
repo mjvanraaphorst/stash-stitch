@@ -1,6 +1,6 @@
 name: Stash Stitch
-description: Play scene groups as one chaptered video, with a combined timeline and browser-side prebuffering.
-version: 0.1.0
+description: Show scene groups as one item in the native Stash interface, with chaptered playback.
+version: 0.2.0
 url: https://github.com/mjvanraaphorst/stash-stitch
 ui:
   javascript:

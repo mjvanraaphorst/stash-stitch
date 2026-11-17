@@ -1,25 +1,15 @@
-# Architecture
+# Native integration
 
-Stitch registers one Stash UI route prefix and patches navigation, group cards and the group page. All GraphQL operations in the runtime are reads. Metadata comes from the native Group and Scene models; the plugin does not create fake scene records.
+The v0.2 runtime patches Stash's FilteredSceneList, SceneList, SceneCard, SceneCard.Image, ScenePage and ScenePlayer. It does not register a new library/navigation entry. The old plugin route only redirects old links to a native scene URL.
 
-## Timeline
+A cached group catalog chooses the first chapter as a representative. Native scene filters are prefixed with ID exclusions for the other members. The exclusions run on the backend before native pagination, so groups do not repeat across pages and the native result count remains usable. The caller's existing filter is retained intact. Search/filter/sort semantics remain those of the representative's original metadata. Bulk selection exits grouped mode; no group display metadata is written onto a scene.
 
-Direct group scenes are sorted by `SceneGroup.scene_index`, followed by numeric scene ID when an index is missing or repeated. A chapter's global start is the sum of earlier chapter durations. Global seeking maps into the chapter and its local offset. Native Stash scene durations provide the compatibility timeline; continuous mode uses parsed MP4 movie durations.
+The normal SceneCard renders a virtual copy of the representative with group title, synopsis, cover and total duration. It links to `/scenes/<representative>?stitch=<group>`. Stitched mode replaces only the scene metadata/player panels within the native scene route, using Stash's existing layout classes and Video.js 7.21.7 (the version used by Stash v0.32.0). Original chapter links use `stitch=off` and retain the ordinary scene editor/player.
 
-## Continuous media path
+The timeline sums ordered scene durations. Continuous mode reads MP4 metadata, fetches indexed sample ranges, fragments samples in memory and appends them to video/audio SourceBuffers at global chapter offsets. A leading empty edit is a delay expressed in movie timescale. The edit mapper supports initial empty edits and contiguous unit-rate edits; genuine initial media gaps or discontinuous edits use native compatibility playback instead of manufacturing missing video frames.
 
-`Mp4Asset` obtains MP4 metadata with bounded HTTP range requests, including a jump over `mdat` to an end-of-file `moov` when required. MP4Box.js exposes sample offsets and timestamps. Stitch divides video on keyframe boundaries and assigns audio samples to corresponding intervals. It fetches those bytes, creates fragmented MP4 segments in memory, and releases sample payloads after appending.
+Compatibility mode uses one native media element and a speculative next-chapter preload element. Video.js's public timeline/source getters and its HTML5 tech time/seek/buffer methods bridge native controls to the combined timeline. Source changes preserve the group position; original chapter media retains its own edit-list behavior. This path does not promise gapless transitions.
 
-One media element has a MediaSource with a video SourceBuffer and optional audio SourceBuffer. Track edit-list trim is applied through timestamp offsets. Each chapter's fragments are placed at its global offset. A small start-window tolerance prevents microsecond rounding from discarding an initial keyframe. An initialization segment precedes each fragment so out-of-order chapter preloads and random seeking retain the right decoder configuration. A conservative media signature rejects differing track configurations before playback starts.
+Playback and seek destinations have scheduling priority over chapter-opening preloads. Old fragments are evicted outside the playback window and refetched after backwards seeks. SourceBuffer eviction by the browser invalidates local bookkeeping. Timers, listeners, pending reads and object URLs are cleaned up on navigation/mode changes.
 
-The scheduler prioritizes the current seek/playback location, then imminent chapter transitions, then the first five seconds of other chapters. It yields after each fragment, so new seeks can change priority. Fragments are rounded to keyframe boundaries, not exactly five seconds. A memory budget limits speculative preloading. Old fragments outside the playback window are removed; later seeks refetch them. The final segment signals end-of-stream, and later appends can reopen the media source.
-
-## Compatibility path
-
-Two native video elements alternate. The inactive element prepares the next scene while the active element plays. The same combined timeline controls both. This reduces network startup delay but does not promise frame-accurate or gapless element switching. Loading hints are controlled by the browser.
-
-## Lifetime and failures
-
-AbortController cancels reads and pending media operations on navigation or mode changes. Media listeners and timers are removed and object URLs revoked. An unsupported stream or decode failure is displayed with a retry and explicit compatibility option. No automatic switch discards the current position. Resume data is local to the browser and group ID.
-
-The Stash UI plugin API is experimental. Version-specific integration checks are required when Stash changes its patchable components or route rendering.
+All runtime GraphQL operations are reads. Resume is browser-local; stitched playback does not write global group offsets into an original scene's play history.

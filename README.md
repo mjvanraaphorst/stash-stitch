@@ -1,101 +1,76 @@
 # Stash Stitch
 
-**Turn scene groups into one chaptered viewing experience.**
+**Grouped scenes, one item, inside Stash.**
 
-Stash Stitch is a browser-only UI plugin for [Stash](https://github.com/stashapp/stash). A group becomes one playable item with its own title, synopsis and cover. Its scenes sit on a combined timeline: seek halfway through the group and Stitch finds the corresponding scene and position.
+Stash Stitch is a UI plugin for [Stash](https://github.com/stashapp/stash). It collapses scene groups directly in the normal **Scenes** interface. A group gets one native scene card with its title, description, cover and combined duration. Opening it stays on Stash's normal scene page and plays all chapters on one Video.js timeline.
 
-**Early preview.** Compatible MP4s can play through a single media element. Mixed formats have a compatibility mode with best-effort transitions. No separate helper, permanent file merge, or media upload is required.
+**v0.2.0 preview:** the separate Stitch library from v0.1.0 has been removed. Old Stitch links redirect into the native scene page. No separate helper, permanent file merge, media upload or fake scene records are required.
 
-![Stash Stitch playing generated demo chapters](docs/preview.png)
+![Grouped playback inside the native Stash scene page](docs/preview.png)
 
-## Features
+## Install or update
 
-- Group library with one card per group, title, synopsis and cover.
-- Group cards in Stash open the Stitch player; the original group remains available through **Edit group in Stash**.
-- Chapters follow Stash's scene index, with scene ID as a deterministic fallback.
-- One seek bar, total duration, chapter buttons, volume, speed and fullscreen controls.
-- Continuous mode repackages MP4 samples in browser memory and preloads roughly the first five seconds of each chapter (rounded to keyframe boundaries, subject to memory limits).
-- Playback and seeking take priority over speculative preloading; about 25 seconds of the current playback path are prepared ahead.
-- Compatibility mode keeps the next scene in a second media element to reduce transition delays.
-- Resume position is saved locally in that browser.
-- Ungrouped scenes are available in a separate library tab.
+Tested with **Stash v0.32.0**. Other versions are unverified.
 
-## Install
-
-Requires **Stash v0.32.0** (the version used for integration testing). Other versions are unverified.
-
-1. Download `stash-stitch.zip` from [Releases](https://github.com/mjvanraaphorst/stash-stitch/releases).
-2. Extract it into your Stash plugins directory so the layout is:
-
-   ```text
-   <plugins directory>/stash-stitch/
-     stash-stitch.yml
-     stash-stitch.js
-     stash-stitch.css
-   ```
-
-3. In Stash, open **Settings → Plugins**, reload plugins, then refresh the browser page. Restarting Stash also reloads the manifest.
-4. Click **Stitch** in the navigation, or open `/plugins/stash-stitch` on your Stash server.
-5. Open a group, choose **Prepare playback**, then **Play**. If continuous mode reports incompatible media, choose **Use compatibility mode**.
-
-Alternatively, add the following source URL in **Settings → Plugins → Available Plugins → Add source**, then install **Stash Stitch**:
+Add this source in **Settings → Plugins → Available Plugins → Add source**:
 
 ```text
 https://raw.githubusercontent.com/mjvanraaphorst/stash-stitch/main/index.yml
 ```
 
-The plugin's runtime files are also committed in `plugin/`, so installation does not require Node or a build tool. To uninstall, remove Stash Stitch through the plugin manager (if installed there), or remove its directory and reload plugins. Scene files and group metadata are untouched.
+Install **Stash Stitch**, or use **Check for updates → Update** if v0.1.0 is already installed. Refresh your browser afterwards.
 
-## Browser and media compatibility
+For manual installation, download `stash-stitch.zip` from [Releases](https://github.com/mjvanraaphorst/stash-stitch/releases), extract its contents into `<Stash plugins>/stash-stitch/`, reload plugins and refresh the browser. The manifest, JS, CSS and license files must sit together in that directory. Node is not needed to use the plugin.
 
-| Path | Chrome on macOS | Safari on macOS |
-| --- | --- | --- |
-| Continuous MP4 playback | Chromium automated tests + Chrome integration checks | WebKit automated tests + Safari integration checks |
-| Combined seeking and chapters | Tested | WebKit tested |
-| Mixed-format compatibility mode | Tested with native MP4 | WebKit tested with native MP4 |
+To uninstall, use Stash's plugin manager, or remove the manually installed plugin directory and reload plugins. Media and group metadata remain untouched.
 
-Continuous mode currently requires ordinary, non-fragmented MP4 files served with HTTP byte ranges, one video track and at most one audio track. Chapter track IDs, codec strings, resolution and audio configuration must match. Each browser must support the codecs through Media Source Extensions. H.264 video and AAC audio are the initial test baseline.
+## Using it
 
-MP4s with metadata at the end are supported. Complex edit lists, fragmented MP4 inputs, multiple audio tracks and unsupported containers are rejected with a visible fallback option. This version does not re-encode media. Some files can play in Stash's normal player but cannot use Stitch continuous mode.
+1. Add your scenes to a normal Stash group. Set its name, synopsis, cover and scene indices in Stash.
+2. Open **Scenes**. **Group scenes: on** collapses each eligible group to one card. The native search, filters, sorting, page size and pagination remain in place.
+3. Open the card. Its title and description appear beside the familiar Video.js player. The seek bar covers the entire group, and chapter buttons jump to scene boundaries.
+4. Choose **Group scenes: off** to return to individual scenes. Bulk selection automatically switches to individual scenes before native edit/delete actions are used.
 
-Compatibility mode can use streams playable natively by the browser, including Stash's existing server streaming options. Stash itself may transcode those options as it normally does. Stitch runs no external service. Preloading is browser-controlled in compatibility mode and cannot promise an exact five-second buffer.
+Group members remain individually available when editing a group and through the chapter details links. Editing the group's title/description uses Stash's normal group editor; grouped display metadata is never written onto an original scene.
 
-**Gapless audio and video across arbitrary files are not guaranteed.** Timing, encoder padding, differing media configurations, bandwidth and browser memory management affect transitions. Mobile Safari, AirPlay, casting, VR playback, subtitles, funscripts and Stash play-history updates are not supported by this preview. Use the original scene player for those features. Fullscreen keeps the combined controls where the browser supports element fullscreen.
+## Playback
 
-Stitch provides its own grouped library; it does **not** collapse the stock Scenes grid or alter its pagination and filters. Groups and ungrouped scenes currently use separate tabs. Groups include direct scene members only, not recursive subgroups.
+Continuous mode fetches MP4 metadata and sample byte ranges, repackages segments in browser memory, and places them on one real media timeline. Playback and seeks take priority, followed by roughly five seconds of each chapter opening (rounded to keyframes and subject to a 64 MB speculative-prebuffer budget).
 
-## Privacy and resource use
+Leading empty MP4 edits are parsed as timing delays, rather than rejected simply because an edit list has multiple entries. Contiguous unit-rate edits are also recognized. Authored empty intervals, discontinuous edits, unsupported codecs, differing media configurations and other incompatible inputs automatically use **compatibility playback** instead of leaving an unsupported-edit-list error on screen.
 
-All metadata requests and media reads stay on the current Stash origin, using your existing signed-in session. There is no telemetry, third-party CDN or external API. No API key is required by the plugin. Resume time is stored in this browser's local storage, keyed by group ID; it is not written back to Stash.
+Compatibility playback keeps the combined native seek controls while switching original scene streams. It asks the browser to preload the next chapter. Transitions may pause briefly, and an exact five-second native buffer cannot be forced. Stash's existing server streaming options may transcode as they normally do; Stitch adds no server helper.
 
-Requests use bounded byte ranges. Speculative chapter prebuffering has a 64 MB accounting budget; playback retains a rolling window and evicts old data. These are application-level controls, not a hard cap on total browser memory. A single media segment and metadata read each have a 64 MB safety limit. Very large groups may prepare only some chapter openings, and browsers may evict buffered data themselves.
+## Current limits
+
+- The chapter with the first scene index represents each group in the native query. Scene ID breaks missing/repeated index ties. Native filters, search and sorting evaluate that representative scene's original metadata. Group names are displayed on cards, but are not added to Stash's server-side scene text search.
+- Backend scene counts and pagination exclude other group members globally, so the same group is not repeated on later pages. The native aggregate duration/file-size byline still describes the representative files, not the expanded chapter collection.
+- Groups must have at least two direct scenes with usable durations. Recursive subgroups are not combined. If groups overlap, the first group by numeric ID takes precedence and overlapping later groups are left uncollapsed.
+- Group cards and stitched playback are currently intended for native grid browsing. Use individual scenes for tagging, bulk editing, and specialized views.
+- Continuous mode requires ordinary, non-fragmented MP4, byte-range support, one video track and at most one audio track. Track IDs, codec strings, resolution and audio configuration must match, and the browser must support those codecs. H.264/AAC is the test baseline.
+- Chrome and Safari on macOS are the initial targets. Mobile Safari, AirPlay, casting, VR, subtitles, funscripts and per-scene Stash play-history updates are outside this preview. Use the original scene player for those features.
+- Gapless audio/video across arbitrary files is not guaranteed. Browser memory pressure, encoder padding, network conditions and source differences can affect transitions. Resume position is saved locally in the browser by group ID.
+
+All runtime metadata/media reads stay on the current Stash origin with your existing session. There is no telemetry or external runtime CDN. No API key is required by the plugin. Application prebuffer limits are not a hard cap on total browser memory; MP4 metadata and individual fragments also have 64 MB safety limits.
 
 ## Development
 
-Use Node 22 or newer.
+Use Node 22 or newer:
 
 ```sh
 npm ci
-npm run build
-npm test
-```
-
-Browser tests use generated colour clips and tones, never personal media:
-
-```sh
-# If your npm configuration blocks package install scripts:
-node node_modules/ffmpeg-static/install.js
+npm run check
+node node_modules/ffmpeg-static/install.js # if npm blocks dependency install scripts
 npx playwright install chromium webkit
-node scripts/fixtures.mjs
+npm run fixtures
 npm run test:browser
+npm run package
 ```
 
-For a synthetic interactive demo, run `node scripts/test-server.mjs` and visit `http://127.0.0.1:4177/plugins/stash-stitch`. This server is test tooling; users do not run it to use the plugin.
+Browser fixtures use generated colours and tones, including a real MP4 with a leading empty edit. `node scripts/test-server.mjs` runs test tooling at `127.0.0.1:4177`; users do not run it to use the plugin. `scripts/seed-stash.mjs` targets an isolated Stash test instance at `127.0.0.1:4178` only.
 
-`scripts/seed-stash.mjs` populates a separate, manually started Stash test instance at **127.0.0.1:4178 only**. It creates synthetic scenes and groups and must not be pointed at a personal library. Download the official Stash binary yourself and configure its library path to `.local/media` and plugins path to `plugin/` if reproducing that integration test.
-
-See [validation notes](docs/VALIDATION.md) and [architecture](docs/ARCHITECTURE.md). Reports with Stash version, browser/OS version, container, codec and sanitized error text are welcome. Do not attach personal media, API keys or authenticated stream URLs to public issues.
+See [architecture](docs/ARCHITECTURE.md) and [validation notes](docs/VALIDATION.md). Reports should include Stash/browser versions and sanitized errors. Do not post personal media, credentials or authenticated stream URLs to public issues.
 
 ## License
 
-MIT. MP4 parsing and in-memory fragmentation use [MP4Box.js](https://github.com/gpac/mp4box.js) under its BSD-3-Clause license; its notice ships with the plugin.
+MIT. MP4Box.js is BSD-3-Clause; Video.js and its bundled dependencies retain their respective licenses. Full third-party license texts ship with the plugin.

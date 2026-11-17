@@ -1,4 +1,5 @@
 import { createFile, Log } from 'mp4box';
+import { editTiming } from './edits.js';
 Log.setLogLevel(Log.error);
 
 const CHUNK = 1024 * 1024;
@@ -49,8 +50,7 @@ export class Mp4Asset {
     this.tracks = [...info.videoTracks, ...info.audioTracks].map(track => {
       const samples = this.file.getTrackSamplesInfo(track.id);
       const edits = track.edits || [];
-      if (edits.length > 1 || edits.some(e => e.media_time < 0 || e.media_rate_integer !== 1)) throw new Error('This MP4 uses an unsupported edit list.');
-      const trim = edits[0]?.media_time / track.timescale || 0;
+      const { trim } = editTiming(edits, track.timescale, info.timescale);
       const type = track.type;
       const mime = `${type}/mp4; codecs="${track.codec}"`;
       const MS = window.MediaSource || window.ManagedMediaSource;
@@ -62,6 +62,10 @@ export class Mp4Asset {
       this.file.setSegmentOptions(track.id, null, { nbSamples: 1, rapAlignement: false });
       return { ...track, samples, trim, mime };
     });
+    const firstVideoTime = Math.min(...this.tracks[0].samples.slice(0, 32).map(s => s.cts / s.timescale)) - this.tracks[0].trim;
+    // A genuine empty interval has no frame to append. The native decoder can
+    // honor that authored delay; don't create an MSE timeline that stalls there.
+    if (firstVideoTime > 0.002) throw new Error('An initial empty media interval requires compatibility playback.');
     this.file.onSegment = () => {};
     const init = this.file.initializeSegmentation('per-track');
     for (const track of this.tracks) track.init = init.find(i => i.id === track.id).buffer;

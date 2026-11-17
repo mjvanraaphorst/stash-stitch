@@ -16,6 +16,14 @@ export async function graphql(query, variables = {}, signal) {
 }
 
 const sceneFields = `id title files { basename duration } paths { screenshot stream } groups { group { id } scene_index } sceneStreams { url mime_type label }`;
+let catalogRequest, catalogTime = 0;
+export function getCatalog() {
+  if (!catalogRequest || Date.now() - catalogTime > 15000) {
+    catalogTime = Date.now();
+    catalogRequest = graphql(`query StitchCatalog { findGroups(filter: { per_page: -1 }, group_filter: { scene_count: { value: 1, modifier: GREATER_THAN } }) { groups { id name synopsis front_image_path scenes { id groups { group { id } scene_index } files { duration } } } } }`).then(data => data.findGroups.groups).catch(e => { catalogRequest = null; throw e; });
+  }
+  return catalogRequest;
+}
 export async function getGroup(id, signal) {
   const data = await graphql(`query StitchGroup($id: ID!) { findGroup(id: $id) { id name synopsis front_image_path scenes { ${sceneFields} } } }`, { id }, signal);
   if (!data.findGroup) throw new Error('This group no longer exists.');
