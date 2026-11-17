@@ -3,7 +3,9 @@ import { copyFile, mkdir, readFile, writeFile, readdir, access } from 'node:fs/p
 import { dirname, join } from 'node:path';
 await mkdir('plugin', { recursive: true });
 const result = await build({ entryPoints: ['src/index.jsx'], outfile: 'plugin/stash-stitch.js', bundle: true, format: 'iife', target: ['chrome110', 'safari17'], minify: true, legalComments: 'eof', jsxFactory: 'React.createElement', jsxFragment: 'React.Fragment', metafile: true });
-await writeFile('plugin/stash-stitch.css', (await readFile('node_modules/video.js/dist/video-js.min.css', 'utf8')) + '\n' + (await readFile('src/native.css', 'utf8')));
+// Stash already owns the Video.js skin. Shipping its defaults globally overrides
+// Stash's full-width progress bar, even on completely unrelated scenes.
+await copyFile('src/native.css', 'plugin/stash-stitch.css');
 await copyFile('node_modules/video.js/LICENSE', 'plugin/VIDEOJS-LICENSE.txt');
 const packages = new Set(['node_modules/videojs-font']);
 for (const input of Object.keys(result.metafile.inputs).filter(p => p.includes('node_modules/'))) {

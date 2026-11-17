@@ -5,6 +5,7 @@ test('native Video.js controls expose and seek the full group timeline', async (
   await page.goto('/native/group/1');
   await expect(page.getByRole('status')).toContainText('Continuous playback', { timeout: 20000 });
   await expect.poll(() => page.evaluate(() => window.stitchTest.getPlayer()?.duration())).toBe(24);
+  await expect.poll(() => page.evaluate(() => window.stitchTest.getPlayer()?.poster())).toBe('/first-scene.svg');
   await expect.poll(() => page.locator('video').first().evaluate(v => [0.1, 8.1, 16.1].every(t => Array.from({ length: v.buffered.length }, (_, i) => [v.buffered.start(i), v.buffered.end(i)]).some(([a,b]) => a <= t && t < b))), { timeout: 20000 }).toBe(true);
   await expect(page.getByLabel('Group chapters').getByRole('button')).toHaveCount(3);
   await expect(page.getByLabel('Group chapters').getByRole('button').nth(1)).toBeEnabled();

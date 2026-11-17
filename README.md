@@ -2,9 +2,9 @@
 
 **Grouped scenes, one item, inside Stash.**
 
-Stash Stitch is a UI plugin for [Stash](https://github.com/stashapp/stash). It collapses scene groups directly in the normal **Scenes** interface. A group gets one native scene card with its title, description, cover and combined duration. Opening it stays on Stash's normal scene page and plays all chapters on one Video.js timeline.
+Stash Stitch is a UI plugin for [Stash](https://github.com/stashapp/stash). It collapses scene groups directly in the normal **Scenes** interface. A group gets one native scene card with its title, description, first-chapter thumbnail and combined duration. Opening it stays on Stash's normal scene page and plays all chapters on one Video.js timeline. The native details panel, studio logo, dates, performers and tabs come from the first chapter; the group name and optional synopsis are display overrides.
 
-**v0.2.0 preview:** the separate Stitch library from v0.1.0 has been removed. Old Stitch links redirect into the native scene page. No separate helper, permanent file merge, media upload or fake scene records are required.
+**v0.2.1 preview:** the separate Stitch library from v0.1.0 has been removed. Old Stitch links redirect into the native scene page. No separate helper, permanent file merge, media upload or fake scene records are required.
 
 ![Grouped playback inside the native Stash scene page](docs/preview.png)
 
@@ -28,7 +28,7 @@ To uninstall, use Stash's plugin manager, or remove the manually installed plugi
 
 1. Add your scenes to a normal Stash group. Set its name, synopsis, cover and scene indices in Stash.
 2. Open **Scenes**. **Group scenes: on** collapses each eligible group to one card. The native search, filters, sorting, page size and pagination remain in place.
-3. Open the card. Its title and description appear beside the familiar Video.js player. The seek bar covers the entire group, and chapter buttons jump to scene boundaries.
+3. Open the card. Stash's native details panel displays the group name, the group synopsis (or first chapter description), and the first chapter's metadata. The seek bar covers the entire group, and chapter buttons jump to scene boundaries.
 4. Choose **Group scenes: off** to return to individual scenes. Bulk selection automatically switches to individual scenes before native edit/delete actions are used.
 
 Group members remain individually available when editing a group and through the chapter details links. Editing the group's title/description uses Stash's normal group editor; grouped display metadata is never written onto an original scene.
@@ -50,6 +50,8 @@ Compatibility playback keeps the combined native seek controls while switching o
 - Continuous mode requires ordinary, non-fragmented MP4, byte-range support, one video track and at most one audio track. Track IDs, codec strings, resolution and audio configuration must match, and the browser must support those codecs. H.264/AAC is the test baseline.
 - Chrome and Safari on macOS are the initial targets. Mobile Safari, AirPlay, casting, VR, subtitles, funscripts and per-scene Stash play-history updates are outside this preview. Use the original scene player for those features.
 - Gapless audio/video across arbitrary files is not guaranteed. Browser memory pressure, encoder padding, network conditions and source differences can affect transitions. Resume position is saved locally in the browser by group ID.
+
+Stitch ships only selectors scoped to its own components and uses Stash's existing Video.js stylesheet. It does not replace the player skin for ordinary scenes.
 
 All runtime metadata/media reads stay on the current Stash origin with your existing session. There is no telemetry or external runtime CDN. No API key is required by the plugin. Application prebuffer limits are not a hard cap on total browser memory; MP4 metadata and individual fragments also have 64 MB safety limits.
 

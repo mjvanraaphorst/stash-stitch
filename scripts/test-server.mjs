@@ -4,12 +4,13 @@ import { resolve } from 'node:path';
 import { build } from 'esbuild-wasm';
 mkdirSync('.local', { recursive: true });
 await build({ entryPoints: ['tests/harness.jsx'], outfile: '.local/harness.js', bundle: true, format: 'esm', jsxFactory: 'React.createElement', jsxFragment: 'React.Fragment' });
-const scene = (id, name, order = Number(id)) => ({ id, title: ['The opening', 'A change of scene', 'The final chapter'][Number(id) - 1] || 'Different resolution', details: '', files: [{ basename: `${name}.mp4`, duration: 8 }], paths: { stream: `/media/${name}.mp4`, screenshot: '' }, groups: [{ group: { id: '1' }, scene_index: order }], sceneStreams: [{ url: `/media/${name}.mp4`, mime_type: 'video/mp4', label: 'Direct stream' }] });
+const scene = (id, name, order = Number(id)) => ({ id, title: ['The opening', 'A change of scene', 'The final chapter'][Number(id) - 1] || 'Different resolution', details: '', files: [{ basename: `${name}.mp4`, duration: 8 }], paths: { stream: `/media/${name}.mp4`, screenshot: name === 'one' ? '/first-scene.svg' : '' }, groups: [{ group: { id: '1' }, scene_index: order }], sceneStreams: [{ url: `/media/${name}.mp4`, mime_type: 'video/mp4', label: 'Direct stream' }] });
 const group = id => ({ id, name: id === '2' ? 'Mixed formats' : 'A story in three chapters', synopsis: 'One title. Three scenes. A single timeline. This demonstration uses generated colours and tones.', front_image_path: '', scene_count: 3, scenes: id === '4' ? [{ ...scene('6', 'shifted'), groups: [{ group: { id: '4' }, scene_index: 1 }], files: [{ basename: 'shifted.mp4', duration: 8.12 }] }, scene('1', 'one')] : id === '3' ? [{ ...scene('5', 'long'), files: [{ basename: 'long.mp4', duration: 120 }] }] : id === '2' ? [scene('1', 'one'), scene('4', 'mixed')] : [scene('3', 'three'), scene('1', 'one'), scene('2', 'two')] });
 const root = resolve('.');
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/first-scene.svg') { res.setHeader('Content-Type', 'image/svg+xml'); res.end('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#183d32"/></svg>'); return; }
     if (url.pathname === '/graphql') {
       let body = ''; for await (const chunk of req) body += chunk;
       const { query, variables } = JSON.parse(body);

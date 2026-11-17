@@ -4,6 +4,7 @@ import { groupCatalog, groupedFilter, groupScene } from './grouping.js';
 import { makeTimeline, clock } from './timeline.js';
 import { ContinuousPlayer } from './player.js';
 import { NativeCompatibility } from './native-compatibility.js';
+import { decorateScenePage } from './native-details.js';
 
 const React = window.PluginApi.React;
 const { useEffect, useState, useRef, useMemo, useContext, createContext } = React;
@@ -47,7 +48,8 @@ export function NativePlayer({ group, initialTimestamp = 0, autoplay = false }) 
     element.classList.add('video-js', 'vjs-default-skin', 'vjs-big-play-centered');
     element.setAttribute('playsinline', '');
     mount.current.appendChild(element);
-    const player = videojs(element, { controls: true, preload: 'auto', fluid: true, autoplay: false, playbackRates: [0.5, 1, 1.25, 1.5, 2], controlBar: { children: ['playToggle', 'volumePanel', 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl', 'playbackRateMenuButton', 'fullscreenToggle'] }, poster: group.front_image_path || '' });
+    const first = makeTimeline(group.scenes, group.id).chapters[0]?.scene;
+    const player = videojs(element, { controls: true, preload: 'auto', fluid: true, autoplay: false, playbackRates: [0.5, 1, 1.25, 1.5, 2], controlBar: { children: ['playToggle', 'volumePanel', 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl', 'playbackRateMenuButton', 'fullscreenToggle'] }, poster: first?.paths?.screenshot || '' });
     vjs.current = player;
     setReady(false); setError(''); setStatus('Preparing group…');
     const announce = update => { if (alive && update.status) setStatus(update.status); if (alive && update.error) setError(update.error); };
@@ -123,12 +125,24 @@ function NativeGroupPlayer(props) {
   return group ? <NativePlayer {...props} group={group} /> : <p role="status">Loading group…</p>;
 }
 
-function NativeGroupDetails() {
+function NativeGroupDetails({ original, originalProps }) {
   const id = groupId();
   const { group, error } = useGroup(id);
   if (!group) return <div className="scene-tabs order-xl-first order-last"><p>{error || 'Loading group…'}</p></div>;
   const timeline = makeTimeline(group.scenes, group.id);
-  return <div className="scene-tabs order-xl-first order-last stitch-native-details"><div className="scene-header-container"><h3 className="scene-header no-studio">{group.name}</h3></div><div className="scene-subheader">{group.scenes.length} chapters · {clock(timeline.duration)}</div><hr /><p className="pre">{group.synopsis}</p><Link className="btn btn-secondary" to={`/groups/${id}`}>Edit group</Link><hr /><h6>Chapters</h6>{timeline.chapters.map((c, i) => <p key={c.scene.id}><Link to={`/scenes/${c.scene.id}?stitch=off`}>{i + 1}. {c.scene.title || c.scene.files?.[0]?.basename || `Scene ${c.scene.id}`}</Link><small className="d-block text-muted">{clock(c.start)} · {clock(c.duration)}</small></p>)}</div>;
+  const first = timeline.chapters[0]?.scene;
+  if (!first) return React.createElement(original, originalProps);
+  if (originalProps.scene.id !== first.id) return <Redirect to={`/scenes/${first.id}?stitch=${id}`} />;
+  return <NativeScenePageView original={original} originalProps={originalProps} group={group} summary={`${group.scenes.length} chapters · ${clock(timeline.duration)}`} />;
+}
+
+function NativeScenePageView({ original, originalProps, group, summary }) {
+  // Invoke the unpatched native render inside this stable React component so its
+  // hooks, layout, studio logo, tabs, performers and native action handlers stay
+  // intact. Only the returned display tree is decorated.
+  const tree = original(originalProps);
+  const link = <Link to={`/groups/${group.id}`}>Edit group</Link>;
+  return decorateScenePage(React, tree, group, originalProps.scene, link, summary);
 }
 
 function NativeList({ original, originalProps }) {
@@ -189,4 +203,4 @@ export function registerNative() {
   instead('ScenePage', (props, original) => <DetailsDispatch original={original} originalProps={props} />);
 }
 function PlayerDispatch({ original, originalProps }) { return groupId() ? <NativeGroupPlayer {...originalProps} /> : React.createElement(original, originalProps); }
-function DetailsDispatch({ original, originalProps }) { return groupId() ? <NativeGroupDetails /> : React.createElement(original, originalProps); }
+function DetailsDispatch({ original, originalProps }) { return groupId() ? <NativeGroupDetails original={original} originalProps={originalProps} /> : React.createElement(original, originalProps); }

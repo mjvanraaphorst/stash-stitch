@@ -11,6 +11,7 @@ test('global representatives prevent repeated groups across separate pages', () 
   const card = groupScene({ id: '1', paths: { screenshot: '/old' }, files: [{ duration: 10 }], title: 'Part one' }, catalog.byGroup.get('7'));
   assert.equal(card.title, 'The whole film'); assert.equal(card.details, 'One description');
   assert.equal(card.files[0].duration, 30); assert.equal(card.__stitchGroup, '7');
+  assert.equal(card.paths.screenshot, '/old', 'the first chapter thumbnail wins over the group cover');
 });
 function match(filter, id) {
   if (!filter) return true;

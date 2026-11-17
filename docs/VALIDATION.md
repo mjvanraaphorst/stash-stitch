@@ -1,10 +1,10 @@
-# v0.2.0 validation
+# v0.2.1 validation
 
 Validated on 17 November 2026 against Stash v0.32.0 (9e9ad972) on macOS. Direct native-interface checks used Chrome 157.0.8103.79; automated playback checks use Playwright Chromium and WebKit.
 
 ## Regression checks
 
-Eleven unit checks cover edit-list timescales and offsets, contiguous edits, explicit fallback for unsupported media edits, global group representatives, ID exclusion completeness, virtual card metadata, cumulative chapter times, seeking boundaries, invalid durations, same-origin media URLs and bounded byte-range responses.
+Fourteen unit checks cover edit-list timescales and offsets, contiguous edits, explicit fallback for unsupported media edits, global group representatives, ID exclusion completeness, virtual card metadata, cumulative chapter times, seeking boundaries, invalid durations, same-origin media URLs and bounded byte-range responses.
 
 Eight browser checks run four native-player scenarios in Chromium and WebKit:
 
@@ -22,3 +22,7 @@ An isolated official Stash v0.32.0 instance uses a temporary database and genera
 Synthetic tests do not establish perceptually gapless playback for arbitrary real media. Browser memory management, media compatibility, complex edits, source changes and remote streaming conditions remain practical constraints. See README for filtering/representative behavior and unsupported specialized features.
 
 No private media, credentials or personal library screenshots are included in the public repository.
+
+## Native appearance and CSS regressions
+
+The native-details decorator is checked for inherited studio, date and performer data, group-description fallback, and preservation of the real first-scene editor object. Thumbnail and poster checks use the first chapter. Every shipped CSS selector is required to be scoped to Stitch; global Video.js defaults are excluded. Native scene-page and ordinary-player sizing are also inspected inside the isolated Stash instance.

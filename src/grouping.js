@@ -31,8 +31,8 @@ export function groupedFilter(filter, catalog) {
 
 export function groupScene(scene, group) {
   return {
-    ...scene, title: group.name, details: group.synopsis || '',
-    paths: { ...scene.paths, screenshot: group.front_image_path || scene.paths.screenshot, preview: null, vtt: null, sprite: null },
+    ...scene, title: group.name, details: group.synopsis || scene.details || '',
+    paths: { ...scene.paths, screenshot: scene.paths.screenshot, preview: null, vtt: null, sprite: null },
     files: scene.files.length ? [{ ...scene.files[0], duration: group.duration }] : [],
     __stitchGroup: group.id, __stitchChapters: group.scenes.length,
   };
