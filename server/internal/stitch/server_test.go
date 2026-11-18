@@ -414,6 +414,42 @@ func TestHTMLBootstrapAndURLCredentials(t *testing.T) {
 		t.Fatal("upstream credentials leaked")
 	}
 }
+
+func TestLegacyGroupedBookmarksKeepTheSameOrigin(t *testing.T) {
+	r := newRig(t, "")
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	for _, path := range []string{"/scenes/2?stitch=1&t=9&qsort=date", "/plugins/stash-stitch/group/1?t=9&qsort=date"} {
+		req, _ := http.NewRequest("GET", r.server.URL+path, nil)
+		req.Header.Set("ApiKey", testKey)
+		resp, e := client.Do(req)
+		if e != nil {
+			t.Fatal(e)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Fatalf("legacy link was not redirected: %d", resp.StatusCode)
+		}
+		u, e := resp.Location()
+		if e != nil {
+			t.Fatal(e)
+		}
+		if u.Host != req.URL.Host || u.Path != "/scenes/stitch-1" || u.Query().Get("t") != "9" || u.Query().Get("qsort") != "date" || u.Query().Get("stitch") != "" {
+			t.Fatalf("incorrect legacy destination: %s", u)
+		}
+	}
+	for _, path := range []string{"/scenes/2?stitch=off", "/scenes/stitch-1"} {
+		req, _ := http.NewRequest("GET", r.server.URL+path, nil)
+		req.Header.Set("ApiKey", testKey)
+		resp, e := client.Do(req)
+		if e != nil {
+			t.Fatal(e)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("original/canonical route changed: %d", resp.StatusCode)
+		}
+	}
+}
 func TestStreamCopyHLS(t *testing.T) {
 	ffmpeg, ffprobe := os.Getenv("STITCH_TEST_FFMPEG"), os.Getenv("STITCH_TEST_FFPROBE")
 	if ffmpeg == "" || ffprobe == "" {

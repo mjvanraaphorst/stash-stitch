@@ -109,6 +109,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, u.String(), http.StatusSeeOther)
 		return
 	}
+	if s.redirectLegacyGroup(w, r) {
+		return
+	}
 	switch {
 	case r.URL.Path == "/stitch/bootstrap.js":
 		w.Header().Set("Content-Type", "application/javascript")
@@ -136,6 +139,60 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Accept-Encoding", "identity")
 		s.proxy.ServeHTTP(w, r)
 	}
+}
+
+// Existing bookmarks and links from other applications use the browser-only
+// /scenes/<original>?stitch=<group> route. On the companion origin these must
+// resolve to a virtual scene, so refreshing an old tab cannot play one chapter.
+func (s *Server) redirectLegacyGroup(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != "GET" && r.Method != "HEAD" {
+		return false
+	}
+	id := ""
+	original := ""
+	if strings.HasPrefix(r.URL.Path, "/scenes/") {
+		original = strings.TrimPrefix(r.URL.Path, "/scenes/")
+		if _, e := strconv.ParseUint(original, 10, 64); e != nil {
+			return false
+		}
+		id = r.URL.Query().Get("stitch")
+	} else if strings.HasPrefix(r.URL.Path, "/plugins/stash-stitch/group/") {
+		id = strings.TrimPrefix(r.URL.Path, "/plugins/stash-stitch/group/")
+	}
+	if _, e := strconv.ParseUint(id, 10, 64); e != nil {
+		return false
+	}
+	cat, e := s.catalog(r.Context())
+	if e != nil {
+		http.Error(w, e.Error(), http.StatusBadGateway)
+		return true
+	}
+	group := cat.Groups[id]
+	if group == nil {
+		http.Error(w, "group is missing or unavailable for grouped playback", http.StatusNotFound)
+		return true
+	}
+	if original != "" {
+		found := false
+		for _, ch := range group.Chapters {
+			if ch.ID == original {
+				found = true
+				break
+			}
+		}
+		if !found {
+			http.Error(w, "scene is not a chapter of this group", http.StatusNotFound)
+			return true
+		}
+	}
+	u := *r.URL
+	u.Path = "/scenes/" + group.VirtualID()
+	u.RawPath = ""
+	q := u.Query()
+	q.Del("stitch")
+	u.RawQuery = q.Encode()
+	http.Redirect(w, r, u.String(), http.StatusSeeOther)
+	return true
 }
 func (s *Server) authorized(r *http.Request) bool {
 	token := r.Header.Get("ApiKey")

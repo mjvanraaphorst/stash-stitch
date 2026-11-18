@@ -2,7 +2,7 @@
 
 The optional companion makes Stash groups appear as ordinary videos in a mixed library, including performer profiles. It runs natively on Linux and macOS; Docker is not required. Keep the plugin and server in the same `stash-stitch` repository.
 
-This is **0.3.0-preview.1**, tested against Stash v0.32.0. It is a compatibility preview, not a replacement implementation of every Stash API feature. Android TV/Stashy and physical AirPlay receiver testing are still required.
+This is **0.3.0-preview.2**, tested against Stash v0.32.0. It is a compatibility preview, not a replacement implementation of every Stash API feature. Android TV/Stashy and physical AirPlay receiver testing are still required.
 
 ## What runs where
 
@@ -12,6 +12,10 @@ This is **0.3.0-preview.1**, tested against Stash v0.32.0. It is a compatibility
 - Open the companion address in a browser to use Stash's existing web interface and native player. Install the matching plugin ZIP in Stash for preparation status, chapter buttons and thumbnail handling. The original Stash address retains browser-only Stitch playback.
 
 The companion reads metadata through Stash GraphQL and downloads originals from Stash's direct `/scene/{id}/stream` endpoint. It never opens your library file paths. FFmpeg reads only those downloaded cache files, with network protocols disabled, and packages encoded packets with **`-c copy`**. It never re-encodes grouped video or audio. Source files are untouched.
+
+## Keep your existing public address
+
+The companion can be the public entry point at your normal Stash address while the existing Stash process listens on a private loopback port. For a Linux installation with backups, authentication, verification and rollback, follow [the same-address deployment guide](docs/LINUX-SAME-ADDRESS.md). Preview 2 also redirects old `?stitch=<groupID>` bookmarks to virtual scene routes on that same address. This changes routing, not the Stash database.
 
 ## Native installation
 

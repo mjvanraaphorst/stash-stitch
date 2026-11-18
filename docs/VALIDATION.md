@@ -35,3 +35,7 @@ The native-details decorator is checked for inherited studio, date and performer
 - Chrome UI verification used the actual Stash web interface through the companion: native scene cards/details, one complete timeline, successful playback at the third chapter, and chapter buttons. Synthetic screenshots only; no user media or credentials are published.
 - Four native binaries built successfully: Linux amd64/arm64 and macOS amd64/arm64. Linux execution is covered by the companion CI workflow, not claimed as locally exercised on this Mac.
 - Physical AirPlay receiver testing, actual Safari hardware playback and Stashy Android TV application testing remain unverified. API/source-level compatibility is not a claim of completed device testing. The first-play full-group cache preparation and specialized API/filter limits are documented in the server guide.
+
+## Same-address deployment update — v0.3.0-preview.2
+
+The Linux deployment guide covers retaining public port 9999, moving the existing Stash process to a private loopback port, private authentication setup, backups and rollback. New server redirects translate old `/scenes/<id>?stitch=<group>` and `/plugins/stash-stitch/group/<id>` bookmarks into same-origin virtual scene routes, preserving timestamp/filter query parameters. Twelve companion tests passed with the race detector, including real stream-copy packaging and the new redirect coverage; `go vet` passed. This update has not itself changed the user's Linux services; that deployment is delegated to Codex on the Linux machine using the published guide.

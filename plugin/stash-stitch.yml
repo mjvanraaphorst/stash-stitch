@@ -1,6 +1,6 @@
 name: Stash Stitch
 description: Show scene groups as one item in the native Stash interface, with chaptered playback.
-version: 0.3.0-preview.1
+version: 0.3.0-preview.2
 url: https://github.com/mjvanraaphorst/stash-stitch
 ui:
   javascript:

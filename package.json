@@ -1,6 +1,6 @@
 {
   "name": "stash-stitch",
-  "version": "0.3.0-preview.1",
+  "version": "0.3.0-preview.2",
   "private": true,
   "type": "module",
   "description": "Play Stash scene groups as one chaptered video.",
@@ -25,5 +25,5 @@
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "releaseDate": "2026-11-18 08:00:00"
+  "releaseDate": "2026-11-18 09:00:00"
 }
