@@ -26,3 +26,12 @@ No private media, credentials or personal library screenshots are included in th
 ## Native appearance and CSS regressions
 
 The native-details decorator is checked for inherited studio, date and performer data, group-description fallback, and preservation of the real first-scene editor object. Thumbnail and poster checks use the first chapter. Every shipped CSS selector is required to be scoped to Stitch; global Video.js defaults are excluded. Native scene-page and ordinary-player sizing are also inspected inside the isolated Stash instance.
+
+## Companion preview — 2026-11-18
+
+- 11 Go tests passed with the race detector, including actual synthetic media packaging, authenticated upstream access, signed manifest/segment requests, unchanged encoded video packet hashes, performer union, pre-pagination collapse, aliases/fragments/variables/defaults/directives, local virtual activity, blocked virtual deletion, and secret masking. `go vet ./...` passed.
+- Existing 14 JavaScript tests and 8 Chromium/WebKit browser-only playback checks passed.
+- A fresh official Stash v0.32.0 instance at a loopback-only test port served generated clips. The companion's packaged native Mac binary exposed one virtual group mixed with standalone scenes. `scripts/test-companion.mjs` confirmed a later-chapter performer's profile returns that group plus a standalone, correct pagination, first-scene studio/thumbnail, original group chapters, and a readable complete HLS playlist.
+- Chrome UI verification used the actual Stash web interface through the companion: native scene cards/details, one complete timeline, successful playback at the third chapter, and chapter buttons. Synthetic screenshots only; no user media or credentials are published.
+- Four native binaries built successfully: Linux amd64/arm64 and macOS amd64/arm64. Linux execution is covered by the companion CI workflow, not claimed as locally exercised on this Mac.
+- Physical AirPlay receiver testing, actual Safari hardware playback and Stashy Android TV application testing remain unverified. API/source-level compatibility is not a claim of completed device testing. The first-play full-group cache preparation and specialized API/filter limits are documented in the server guide.

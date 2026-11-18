@@ -6,3 +6,8 @@ playwright-report/
 .DS_Store
 *.log
 .env*
+
+/stitch-server.json
+/server/stitch-server.json
+/server/stitch-server
+stitch-cache/

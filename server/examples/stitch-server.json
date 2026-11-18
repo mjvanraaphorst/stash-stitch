@@ -1,0 +1,15 @@
+{
+  "listen": "127.0.0.1:9998",
+  "public_url": "http://127.0.0.1:9998",
+  "stash_url": "http://127.0.0.1:9999",
+  "stash_api_key": "",
+  "service_key": "CHANGE_ME_USE_STITCH_SERVER_GENERATE_KEY",
+  "cache_dir": "./stitch-cache",
+  "ffmpeg": "ffmpeg",
+  "ffprobe": "ffprobe",
+  "max_cache_bytes": 53687091200,
+  "max_download_bytes": 21474836480,
+  "max_scenes": 20000,
+  "prepare_timeout_seconds": 3600,
+  "media_token_hours": 24
+}

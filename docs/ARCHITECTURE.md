@@ -13,3 +13,13 @@ Compatibility mode uses one native media element and a speculative next-chapter 
 Playback and seek destinations have scheduling priority over chapter-opening preloads. Old fragments are evicted outside the playback window and refetched after backwards seeks. SourceBuffer eviction by the browser invalidates local bookkeeping. Timers, listeners, pending reads and object URLs are cleaned up on navigation/mode changes.
 
 All runtime GraphQL operations are reads. Resume is browser-local; stitched playback does not write global group offsets into an original scene's play history.
+
+# Optional companion (v0.3 preview)
+
+`server/` is a native Go HTTP service, with the same code cross-compiled for Linux/macOS on amd64/arm64. It authenticates clients with its own service key, connects to Stash using a private upstream API key, and proxies the native web assets plus GraphQL/WebSocket traffic. The web page loads a same-origin bootstrap script before the plugin, selecting companion-specific hooks instead of browser-only collapsing.
+
+The GraphQL adapter parses query ASTs, expands fragments with a nesting limit, retains variables/defaults/directives and aliases, and collapses scene results before pagination. Groups get stable `stitch-<groupID>` IDs. Requested first-scene metadata supplies virtual fields; performer/tag selections are combined across all chapters. Group-filtered lists, nested group scenes, and explicit original IDs retain original records. The matching preview plugin reuses the real native player; a wrapper reports preparation progress and adds chapter buttons. Native image rendering retains Stash overlays while omitting misleading first-scene hover media.
+
+Media preparation downloads originals only from Stash's direct stream endpoint. FFprobe validates the supported encoded formats. FFmpeg uses stream copy into fMP4 HLS segments; network protocols are disabled during local packaging. One complete VOD manifest combines chapter playlists with map/discontinuity tags. Completed packages are cached, bounded and evicted when old/unpinned. A cold group must finish preparation before its VOD manifest is served. Receiver requests use group/revision-scoped expiring HMAC signatures; upstream credentials are not embedded. Virtual playback activity is stored atomically in companion-local JSON, and other virtual-scene mutations are rejected.
+
+This is a bounded compatibility adapter, not a complete replacement for Stash's data model. See `server/README.md` for filter, sorting, counts, overlapping-group and device-compatibility limits. The stable plugin source index intentionally stays on v0.2.1 while the companion preview is tested.

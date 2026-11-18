@@ -1,0 +1,16 @@
+[Unit]
+Description=Stash Stitch companion
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Install as a systemd user service, or add User=YOUR_USER for a system service.
+ExecStart=%h/.local/bin/stitch-server -config %h/.config/stash-stitch/stitch-server.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

@@ -202,5 +202,65 @@ export function registerNative() {
   instead('ScenePlayer', (props, original) => <PlayerDispatch original={original} originalProps={props} />);
   instead('ScenePage', (props, original) => <DetailsDispatch original={original} originalProps={props} />);
 }
+
+// On the companion origin, library grouping and the single timeline come from
+// the server. Wait for a cold cache explicitly so a native player does not time
+// out while the complete original-quality HLS presentation is being prepared.
+export function registerCompanion() {
+  window.PluginApi.patch.instead('SceneCard.Image', (...args) => {
+    const props = args[0], original = args.at(-1);
+    return props.scene?.id?.startsWith('stitch-')
+      ? <CompanionCardImage original={original} originalProps={props} />
+      : React.createElement(original, props);
+  });
+  window.PluginApi.patch.instead('ScenePlayer', (...args) => {
+    const props = args[0], original = args.at(-1);
+    return props.scene?.id?.startsWith('stitch-')
+      ? <CompanionPlayer original={original} originalProps={props} />
+      : React.createElement(original, props);
+  });
+}
+
+function CompanionCardImage({ original, originalProps }) {
+  const tree = original(originalProps);
+  const children = React.Children.map(tree.props.children, child => {
+    if (!React.isValidElement(child) || !('image' in child.props) || !('vttPath' in child.props)) return child;
+    return <div className={`scene-card-preview${child.props.isPortrait ? ' portrait' : ''}`}><img className="scene-card-preview-image" loading="lazy" src={child.props.image} alt="" /></div>;
+  });
+  // Keep Stash's own resolution/duration overlays and rating banner; only the
+  // hover preview is omitted because it belongs to an individual source scene.
+  return React.cloneElement(tree, {}, children);
+}
+
+function CompanionPlayer({ original, originalProps }) {
+  const id = originalProps.scene.id.slice('stitch-'.length);
+  const mount = useRef();
+  const [state, setState] = useState(null), [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const abort = new AbortController();
+    let timer;
+    setState(null); setError('');
+    async function poll(method = 'GET') {
+      try {
+        const response = await fetch(`/stitch/groups/${encodeURIComponent(id)}`, { method, credentials: 'same-origin', signal: abort.signal });
+        if (!response.ok) throw new Error(`Group preparation failed (${response.status}).`);
+        const next = await response.json();
+        if (abort.signal.aborted) return;
+        setState(next);
+        if (next.error) setError(next.error);
+        else if (next.status !== 'ready') timer = setTimeout(() => poll(), 1000);
+      } catch (e) { if (!abort.signal.aborted) setError(e.message); }
+    }
+    poll('POST');
+    return () => { abort.abort(); clearTimeout(timer); };
+  }, [id, attempt]);
+  return <div ref={mount} className="stitch-native-player">
+    {error ? <div className="alert alert-danger" role="alert">{error} <button className="btn btn-secondary" onClick={() => setAttempt(attempt + 1)}>Retry</button></div>
+      : state?.status === 'ready' ? React.createElement(original, originalProps)
+        : <p role="status">Preparing original-quality playback… {state?.status || ''}. First playback prepares a cached copy; no transcoding.</p>}
+    {state?.status === 'ready' && <div className="stitch-native-chapters" aria-label="Group chapters">{state.chapters.map((chapter, i) => <button className="btn btn-secondary" key={chapter.scene_id} onClick={() => { const video = mount.current?.querySelector('video'); if (video) video.currentTime = chapter.start; }}>{i + 1} · {clock(chapter.start)}</button>)}</div>}
+  </div>;
+}
 function PlayerDispatch({ original, originalProps }) { return groupId() ? <NativeGroupPlayer {...originalProps} /> : React.createElement(original, originalProps); }
 function DetailsDispatch({ original, originalProps }) { return groupId() ? <NativeGroupDetails original={original} originalProps={originalProps} /> : React.createElement(original, originalProps); }

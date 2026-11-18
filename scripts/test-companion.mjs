@@ -1,0 +1,45 @@
+// Integration test against the isolated test Stash only. Never accepts a live URL.
+import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
+const key = 'synthetic-local-testing-key-only-2026';
+async function q(port, query, variables = {}) {
+  const response = await fetch(`http://127.0.0.1:${port}/graphql`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(port === 4179 ? { ApiKey: key } : {}) }, body: JSON.stringify({ query, variables }) });
+  const result = await response.json();
+  assert.ok(!result.errors, JSON.stringify(result.errors));
+  return result.data;
+}
+const originals = (await q(4178, '{findScenes(filter:{per_page:-1}){scenes{id title files{basename path duration}}}}')).findScenes.scenes;
+assert.ok(originals.length >= 4);
+assert.ok(originals.every(s => s.files.every(f => f.path.startsWith(resolve('.local/media') + '/'))), 'Refusing to modify anything except this checkout’s synthetic fixtures.');
+const first = originals.find(s => s.files[0].basename === 'one.mp4');
+const second = originals.find(s => s.files[0].basename === 'two.mp4');
+const standalone = originals.find(s => s.files[0].basename === 'mixed.mp4');
+let performers = (await q(4178, '{findPerformers(filter:{per_page:-1}){performers{id name}}}')).findPerformers.performers;
+let performer = performers.find(p => p.name === 'Synthetic Performer');
+if (!performer) performer = (await q(4178, 'mutation{performerCreate(input:{name:"Synthetic Performer"}){id name}}')).performerCreate;
+for (const scene of [second, standalone]) await q(4178, 'mutation($input:SceneUpdateInput!){sceneUpdate(input:$input){id}}', { input: { id: scene.id, performer_ids: [performer.id] } });
+let studios = (await q(4178, '{findStudios(filter:{per_page:-1}){studios{id name}}}')).findStudios.studios;
+let studio = studios.find(s => s.name === 'Synthetic Studio');
+if (!studio) studio = (await q(4178, 'mutation{studioCreate(input:{name:"Synthetic Studio"}){id name}}')).studioCreate;
+await q(4178, 'mutation($input:SceneUpdateInput!){sceneUpdate(input:$input){id}}', { input: { id: first.id, studio_id: studio.id, date: '2021-02-05', details: 'First chapter metadata stays native.' } });
+const query = `query($scene_filter:SceneFilterType,$filter:FindFilterType){findScenes(scene_filter:$scene_filter,filter:$filter){count scenes{id title performers{id name} studio{id name} files{duration format} paths{stream screenshot}}}}`;
+const result = await q(4179, query, { scene_filter: { performers: { value: [performer.id], modifier: 'INCLUDES' } }, filter: { page: 1, per_page: 1, sort: 'title', direction: 'ASC' } });
+assert.equal(result.findScenes.count, 2, 'Performer sees one group plus one standalone.');
+const group = result.findScenes.scenes[0];
+assert.ok(group.id.startsWith('stitch-'));
+assert.equal(group.studio.name, 'Synthetic Studio');
+assert.equal(group.performers[0].id, performer.id);
+assert.ok(group.paths.screenshot.includes(`/scene/${first.id}/`));
+const page2 = await q(4179, query, { scene_filter: { performers: { value: [performer.id], modifier: 'INCLUDES' } }, filter: { page: 2, per_page: 1, sort: 'title', direction: 'ASC' } });
+assert.equal(page2.findScenes.scenes[0].id, standalone.id);
+const chapters = (await q(4179, '{findScenes(scene_filter:{groups:{value:["1"],modifier:INCLUDES}}){scenes{id}}}')).findScenes.scenes;
+assert.equal(chapters.length, 3);
+assert.ok(chapters.every(s => !s.id.startsWith('stitch-')));
+const response = await fetch(group.paths.stream);
+assert.equal(response.status, 200, await response.clone().text());
+const manifest = await response.text();
+assert.equal(manifest.split('#EXT-X-MAP:').length - 1, 3);
+assert.ok(manifest.includes('#EXT-X-ENDLIST'));
+const status = await fetch('http://127.0.0.1:4179/stitch/groups/1', { headers: { ApiKey: key } }).then(r => r.json());
+assert.equal(status.status, 'ready');
+console.log(JSON.stringify({ checks: 'mixed performer library, pagination, first-scene metadata/thumbnail, original group chapters, real HLS resources', performerID: performer.id, virtualSceneID: group.id, duration: status.duration, chapterCount: status.chapter_count }));

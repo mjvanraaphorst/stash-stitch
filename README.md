@@ -8,6 +8,12 @@ Stash Stitch is a UI plugin for [Stash](https://github.com/stashapp/stash). It c
 
 ![Grouped playback inside the native Stash scene page](docs/preview.png)
 
+## Optional companion server preview
+
+The **0.3.0-preview.1** release adds a native Linux/macOS companion in [`server/`](server/README.md). It exposes groups as virtual Scene objects in a mixed library, including performer-filtered results, and serves one HLS presentation per group using **stream copy only**. Metadata and originals are read through Stash; no library filesystem access or Docker is needed. The first play prepares a full cached group, which can take time for large media.
+
+Point a native client at the companion address to receive this library view. In a browser, the companion serves Stash's existing interface; the matching preview plugin adds preparation status and chapter buttons. The stable plugin source remains on v0.2.1 while this is tested. Download the preview plugin ZIP manually from its release if using the companion. Physical AirPlay receivers and Stashy Android TV still need device validation. See the [server setup, limits and compatibility notes](server/README.md).
+
 ## Install or update
 
 Tested with **Stash v0.32.0**. Other versions are unverified.

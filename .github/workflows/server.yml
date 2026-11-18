@@ -1,0 +1,30 @@
+name: Companion server
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - if: runner.os == 'macOS'
+        run: brew install ffmpeg
+      - name: Test real stream-copy playback and library adapter
+        working-directory: server
+        run: STITCH_TEST_FFMPEG="$(command -v ffmpeg)" STITCH_TEST_FFPROBE="$(command -v ffprobe)" go test -race -v ./...
+      - working-directory: server
+        run: go vet ./...
+      - name: Build native binary
+        working-directory: server
+        run: go build -trimpath -o stitch-server ./cmd/stitch-server
